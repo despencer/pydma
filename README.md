@@ -1,2 +1,2 @@
 # pydma
-Python database metadata management tool
+Python database metadata management tool.

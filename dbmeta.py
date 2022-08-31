@@ -13,6 +13,9 @@ class DbPackaging:
             self.cur.execute("CREATE TABLE dbpacket (module TEXT NOT NULL, version INTEGER NOT NULL, deploy INTEGER, PRIMARY KEY (module, version))")
             self.db.commit()
             logging.info("Packet registry created")
+            self.deploypacket('seqid', 1,"CREATE TABLE seqid_seq (id INTEGER NOT NULL)")
+            self.cur.execute("INSERT INTO seqid_seq (id) VALUES (?)", (1, ) )
+            self.db.commit()
 
     def ispacketregistered(self, name, version):
         self.cur.execute("SELECT deploy FROM dbpacket WHERE module = ? AND version = ?", ( name ,version))
@@ -36,13 +39,15 @@ class DbPackaging:
                     self.cur.execute(script)
                 self.registerpacket(name, version)
                 self.db.commit()
-                self.logger.info('Packet %s version %s deployed', name, version)
+                logging.info('Packet %s version %s deployed', name, version)
             except:
                 self.db.rollback()
                 raise
 
     def open(self, name):
-        self.db = sqlite3.connect(name + '.db')
+        if name.find('.') < 0:
+                name += '.db'
+        self.db = sqlite3.connect(name)
         self.cur = self.db.cursor()
         self.checkregistry()
 

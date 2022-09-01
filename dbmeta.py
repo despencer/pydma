@@ -66,6 +66,12 @@ class Db:
     def deploypacket(self, name, version, script):
         DbPackaging(self).deploypacket(name, version, script)
 
+    def genid(self):
+        self.cur.execute("SELECT id FROM seqid_seq")
+        id = self.cur.fetchone()[0]
+        self.cur.execute("UPDATE seqid_seq SET id = ?", (id+1, ) )
+        return id
+
     def __enter__(self):
         self.open()
         return self

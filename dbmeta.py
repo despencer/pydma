@@ -66,12 +66,6 @@ class Db:
     def deploypacket(self, name, version, script):
         DbPackaging(self).deploypacket(name, version, script)
 
-    def genid(self):
-        self.cur.execute("SELECT id FROM seqid_seq")
-        id = self.cur.fetchone()[0]
-        self.cur.execute("UPDATE seqid_seq SET id = ?", (id+1, ) )
-        return id
-
     def __enter__(self):
         self.open()
         return self
@@ -83,11 +77,21 @@ class DbRun:
     def __init__(self, db):
         self.db = db
 
+    def genid(self):
+        self.db.cur.execute("SELECT id FROM seqid_seq")
+        id = self.db.cur.fetchone()[0]
+        self.db.cur.execute("UPDATE seqid_seq SET id = ?", (id+1, ) )
+        return id
+
+    def execute(self, script, values):
+        self.db.cur.execute(script, values)
+        return self.db.cur.fetchall()
+
     def __enter__(self):
         return self
 
     def __exit__(self, extype, exvalue, extrace):
         if extype == None:
-            self.db.commit()
+            self.db.db.commit()
         else:
-            self.db.rollback()
+            self.db.db.rollback()

@@ -8,9 +8,9 @@ class DbPackaging:
 
     def checkregistry(self):
         try:
-            self.db.cur.execute("SELECT * FROM dbpacket WHERE module = 'init'")
+            self.db.cur.execute("SELECT * FROM dbm_packet WHERE module = 'init'")
         except sqlite3.OperationalError:
-            self.db.cur.execute("CREATE TABLE dbpacket (module TEXT NOT NULL, version INTEGER NOT NULL, deploy INTEGER, PRIMARY KEY (module, version))")
+            self.db.cur.execute("CREATE TABLE dbm_packet (module TEXT NOT NULL, version INTEGER NOT NULL, deploy INTEGER, PRIMARY KEY (module, version))")
             self.db.db.commit()
             logging.info("Packet registry created")
             self.deploypacket('seqid', 1,"CREATE TABLE seqid_seq (id INTEGER NOT NULL)")
@@ -18,7 +18,7 @@ class DbPackaging:
             self.db.db.commit()
 
     def ispacketregistered(self, name, version):
-        self.db.cur.execute("SELECT deploy FROM dbpacket WHERE module = ? AND version = ?", ( name ,version))
+        self.db.cur.execute("SELECT deploy FROM dbm_packet WHERE module = ? AND version = ?", ( name ,version))
         if self.db.cur.fetchone() == None:
             return False
         logging.debug('Row fetched from deploy for %s-%s', name, version)
@@ -26,7 +26,7 @@ class DbPackaging:
 
     def registerpacket(self, name, version):
         time = datetime.now(timezone.utc)
-        self.db.cur.execute("INSERT INTO dbpacket (module, version, deploy) VALUES (?, ?, ?)", (name, version, int(datetime.now(timezone.utc).timestamp())))
+        self.db.cur.execute("INSERT INTO dbm_packet (module, version, deploy) VALUES (?, ?, ?)", (name, version, int(datetime.now(timezone.utc).timestamp())))
         logging.info('Packet %s-%s registered', name, version)
 
     def deploypacket(self, name, version, script):

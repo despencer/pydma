@@ -3,24 +3,45 @@ import logging
 from datetime import datetime, timezone
 
 class DbMeta:
+    def __init__(self, tablename, fields):
+        self.tablename = tablename
+        self.fields = fields
+        self.selectidstmt = "SELECT {0} FROM {1} WHERE id = ?".format(','.join(self.fields), self.tablename)
+        self.insertstmt = "INSERT INTO {0} ({1}) VALUES ({2})".format(self.tablename, ','.join(self.fields), ','.join(map(lambda x:'?', range(len(self.fields)))))
+
     @classmethod
-    def init(cls, factory, obj, attrs):
+    def set(cls, factory, tablename, attrs):
         if not hasattr(factory, 'dbmeta'):
-            setattr(factory, 'dbmeta', attrs)
-        for a in attrs:
+            setattr(factory, 'dbmeta', DbMeta(tablename, attrs))
+
+    @classmethod
+    def init(cls, factory, obj):
+        for a in factory.dbmeta.fields:
             setattr(obj, a, None)
+
+    @classmethod
+    def insert(cls, db, factory, obj):
+        db.execute(factory.dbmeta.insertstmt, cls.values(factory, obj))
+        return obj
+
+    @classmethod
+    def get(cls, db, factory, id):
+        res = db.execute(factory.dbmeta.selectidstmt, (id, ))
+        if(len(res) == 0):
+            return None
+        return cls.fromvalues(factory, res[0])
 
     @classmethod
     def fromvalues(cls, factory, values):
         obj = factory()
-        for n,v in zip(factory.dbmeta, values):
+        for n,v in zip(factory.dbmeta.fields, values):
            setattr(obj, n, v)
         return obj
 
     @classmethod
     def values(cls, factory, obj):
        vals = []
-       for n in factory.dbmeta:
+       for n in factory.dbmeta.fields:
             vals.append(getattr(obj, n))
        return tuple(vals)
 

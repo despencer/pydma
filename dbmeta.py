@@ -2,6 +2,28 @@ import sqlite3
 import logging
 from datetime import datetime, timezone
 
+class DbMeta:
+    @classmethod
+    def init(cls, factory, obj, attrs):
+        if not hasattr(factory, 'dbmeta'):
+            setattr(factory, 'dbmeta', attrs)
+        for a in attrs:
+            setattr(obj, a, None)
+
+    @classmethod
+    def fromvalues(cls, factory, values):
+        obj = factory()
+        for n,v in zip(factory.dbmeta, values):
+           setattr(obj, n, v)
+        return obj
+
+    @classmethod
+    def values(cls, factory, obj):
+       vals = []
+       for n in factory.dbmeta:
+            vals.append(getattr(obj, n))
+       return tuple(vals)
+
 class DbPackaging:
     def __init__(self, db):
         self.db = db

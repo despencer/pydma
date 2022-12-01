@@ -26,7 +26,11 @@ class DbMeta:
 
     @classmethod
     def get(cls, db, factory, id):
-        res = db.execute(factory.dbmeta.selectidstmt, (id, ))
+        return cls.selectone(db, factory, factory.dbmeta.selectidstmt, id)
+
+    @classmethod
+    def selectone(cls, db, factory, stmt, *args):
+        res = db.execute(stmt, args)
         if(len(res) == 0):
             return None
         return cls.fromvalues(factory, res[0])

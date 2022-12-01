@@ -83,9 +83,11 @@ class DbPackaging:
                 self.registerpacket(name, version)
                 self.db.db.commit()
                 logging.info('Packet %s version %s deployed', name, version)
+                return True
             except:
                 self.db.db.rollback()
                 raise
+        return False
 
 class Db:
     def __init__(self, name):
@@ -96,6 +98,7 @@ class Db:
     def open(self):
         self.db = sqlite3.connect(self.filename)
         self.cur = self.db.cursor()
+        self.cur.execute("PRAGMA foreign_keys = ON")
         DbPackaging(self).checkregistry()
 
     def close(self):
@@ -107,7 +110,7 @@ class Db:
         return DbRun(self)
 
     def deploypacket(self, name, version, script):
-        DbPackaging(self).deploypacket(name, version, script)
+        return DbPackaging(self).deploypacket(name, version, script)
 
     def __enter__(self):
         self.open()
@@ -130,11 +133,14 @@ class DbRun:
         self.db.cur.execute(script, values)
         return self.db.cur.fetchall()
 
+    def finish(self, success=True):
+        if success:
+            self.db.db.commit()
+        else:
+            self.db.db.rollback()
+
     def __enter__(self):
         return self
 
     def __exit__(self, extype, exvalue, extrace):
-        if extype == None:
-            self.db.db.commit()
-        else:
-            self.db.db.rollback()
+        self.finish(extype == None)

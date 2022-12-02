@@ -49,6 +49,10 @@ class DbMeta:
             vals.append(getattr(obj, n))
        return tuple(vals)
 
+    @classmethod
+    def now(cls):
+        return int(datetime.now(timezone.utc).timestamp())
+
 class DbPackaging:
     def __init__(self, db):
         self.db = db

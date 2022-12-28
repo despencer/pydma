@@ -16,14 +16,16 @@ class DbMeta:
             setattr(factory, 'dbmeta', DbMeta(tablename, attrs))
 
     @classmethod
-    def init(cls, factory, obj):
+    def init(cls, obj):
+        factory = obj.__class__
         for a in factory.dbmeta.fields:
             setattr(obj, a, None)
         if not hasattr(obj.__class__, 'update'):
             setattr(obj.__class__, 'update', lambda s,db: cls.update(db, s))
 
     @classmethod
-    def insert(cls, db, factory, obj):
+    def insert(cls, db, obj):
+        factory = obj.__class__
         db.execute(factory.dbmeta.insertstmt, cls.values(factory, obj))
         return obj
 

@@ -8,6 +8,7 @@ class DbMeta:
         self.fields = fields
         self.selectidstmt = "SELECT {0} FROM {1} WHERE id = ?".format(','.join(self.fields), self.tablename)
         self.insertstmt = "INSERT INTO {0} ({1}) VALUES ({2})".format(self.tablename, ','.join(self.fields), ','.join(map(lambda x:'?', range(len(self.fields)))))
+        self.updateidstmt = "UPDATE {0} SET {1} WHERE id = ?".format(self.tablename, ','.join( map(lambda x:x+'=?', self.fields)) )
 
     @classmethod
     def set(cls, factory, tablename, attrs):
@@ -18,6 +19,8 @@ class DbMeta:
     def init(cls, factory, obj):
         for a in factory.dbmeta.fields:
             setattr(obj, a, None)
+        if not hasattr(obj.__class__, 'update'):
+            setattr(obj.__class__, 'update', lambda s,db: cls.update(db, s))
 
     @classmethod
     def insert(cls, db, factory, obj):
@@ -25,8 +28,17 @@ class DbMeta:
         return obj
 
     @classmethod
+    def update(cls, db, obj):
+        factory = obj.__class__
+        db.execute(factory.dbmeta.updateidstmt, (*cls.values(factory, obj), obj.id) )
+
+    @classmethod
     def get(cls, db, factory, id):
         return cls.selectone(db, factory, factory.dbmeta.selectidstmt, id)
+
+    @classmethod
+    def getby(cls, db, factory, condition, *args):
+        return cls.selectone(db, factory, "SELECT {0} FROM {1} WHERE {2}".format(','.join(factory.dbmeta.fields), factory.dbmeta.tablename, condition), *args)
 
     @classmethod
     def selectone(cls, db, factory, stmt, *args):

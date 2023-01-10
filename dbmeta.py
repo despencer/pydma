@@ -43,11 +43,19 @@ class DbMeta:
         return cls.selectone(db, factory, "SELECT {0} FROM {1} WHERE {2}".format(','.join(factory.dbmeta.fields), factory.dbmeta.tablename, condition), *args)
 
     @classmethod
+    def getlist(cls, db, factory, condition, *args):
+        return cls.selectlist(db, factory, "SELECT {0} FROM {1} WHERE {2}".format(','.join(factory.dbmeta.fields), factory.dbmeta.tablename, condition), *args)
+
+    @classmethod
     def selectone(cls, db, factory, stmt, *args):
         res = db.execute(stmt, args)
         if(len(res) == 0):
             return None
         return cls.fromvalues(factory, res[0])
+
+    @classmethod
+    def selectlist(cls, db, factory, stmt, *args):
+        return list(map( lambda x:cls.fromvalues(factory,x), db.execute(stmt, args) ))
 
     @classmethod
     def fromvalues(cls, factory, values):

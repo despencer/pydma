@@ -1,6 +1,18 @@
 import sqlite3
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+class Indicator:
+    def __init__(self, interval=10):
+        self.start = datetime.now()
+        self.interval = timedelta(seconds = interval)
+
+    def ready(self):
+        delta = datetime.now()-self.start
+        if delta >= self.interval:
+            self.start = datetime.now()
+            return True
+        return False
 
 class DbMeta:
     def __init__(self, tablename, fields):

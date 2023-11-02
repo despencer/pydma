@@ -1,6 +1,7 @@
 import sqlite3
 import logging
 from datetime import datetime, timezone, timedelta
+from threading import Thread
 
 class Indicator:
     def __init__(self, interval=10):
@@ -14,18 +15,44 @@ class Indicator:
             return True
         return False
 
+class Runner:
+    def __init__(self, processor):
+        self.stop = False
+        self.processor = processor
+
+    def main(self):
+        self.processor.open()
+        indy = Indicator()
+        while not self.stop:
+            if indy.ready():
+                self.processor.info()
+            self.processor.step()
+        self.processor.close()
+
+    @classmethod
+    def run(cls, processor):
+        print('Press enter to stop')
+        runner = cls(processor)
+        t = Thread(target=runner.main)
+        t.start()
+        input()
+        runner.stop = True
+
+
 class DbMeta:
-    def __init__(self, tablename, fields):
+    def __init__(self, tablename, fields, readers, writers):
         self.tablename = tablename
         self.fields = fields
+        self.readers = readers
+        self.writers = writers
         self.selectidstmt = "SELECT {0} FROM {1} WHERE id = ?".format(','.join(self.fields), self.tablename)
         self.insertstmt = "INSERT INTO {0} ({1}) VALUES ({2})".format(self.tablename, ','.join(self.fields), ','.join(map(lambda x:'?', range(len(self.fields)))))
         self.updateidstmt = "UPDATE {0} SET {1} WHERE id = ?".format(self.tablename, ','.join( map(lambda x:x+'=?', self.fields)) )
 
     @classmethod
-    def set(cls, factory, tablename, attrs):
+    def set(cls, factory, tablename, attrs, readers={}, writers={}):
         if not hasattr(factory, 'dbmeta'):
-            setattr(factory, 'dbmeta', DbMeta(tablename, attrs))
+            setattr(factory, 'dbmeta', DbMeta(tablename, attrs, readers, writers))
 
     @classmethod
     def init(cls, obj):
@@ -73,6 +100,8 @@ class DbMeta:
     def fromvalues(cls, factory, values):
         obj = factory()
         for n,v in zip(factory.dbmeta.fields, values):
+           if n in factory.dbmeta.readers:
+                v = factory.dbmeta.readers[n](v)
            setattr(obj, n, v)
         return obj
 
@@ -80,7 +109,10 @@ class DbMeta:
     def values(cls, factory, obj):
        vals = []
        for n in factory.dbmeta.fields:
-            vals.append(getattr(obj, n))
+            v = getattr(obj, n)
+            if n in factory.dbmeta.writers:
+                v = factory.dbmeta.writers[n](v)
+            vals.append(v)
        return tuple(vals)
 
     @classmethod

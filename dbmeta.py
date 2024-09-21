@@ -23,10 +23,12 @@ class Runner:
     def main(self):
         self.processor.open()
         indy = Indicator()
+        self.processor.info()
         while not self.stop:
             if indy.ready():
                 self.processor.info()
             self.processor.step()
+        self.processor.info()
         self.processor.close()
 
     @classmethod

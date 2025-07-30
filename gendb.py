@@ -10,7 +10,8 @@ if __name__ == "__main__":
     parser.add_argument('target', help="The target python filename", type=str)
     args = parser.parse_args()
     dbstr = dbdatadef.loadmeta(args.dbmeta)
+    dbstr = dbdatadef.sqlite().make(dbstr)
     env = jinja2.Environment(loader=jinja2.FileSystemLoader( os.path.dirname(__file__) ))
     with open(args.target , mode='w') as target:
-        target.write(env.get_template('db.py.jinja').render(datadef=dbstr))
+        target.write(env.get_template('db.py.jinja').render(package=dbstr))
 
